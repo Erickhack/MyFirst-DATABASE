@@ -34,10 +34,15 @@ function sendJSON(res, body) {
     });
 }
 
+function filtredPost(filtered) {
+    return filtered.filter(i => !i.removed);
+}
+
 const methods = new Map();
 
 methods.set('/posts.get', ({res}) => {
-    sendJSON(res, posts);
+    const filtred = filtredPost(posts);
+    sendJSON(res, filtredPost(filtred));
 });
 methods.set('/posts.getById', ({res, searchParams}) => {
     const id = +searchParams.get('id');
@@ -48,7 +53,8 @@ methods.set('/posts.getById', ({res, searchParams}) => {
     }
     
     // const idPost = posts.filter(o => o.id === parseInt(id, 10));
-    const idPost = posts.find(i => i.id === +id);
+    const filtred = filtredPost(posts);
+    const idPost = filtred.find(i => i.id === +id);
 
     if (idPost === undefined) {
         sendResponse(res, {status: statusNotFaund, body: errorHtml});
@@ -68,6 +74,7 @@ methods.set('/posts.post', ({res, searchParams}) => {
         id: nextId++,
         content: content,
         created: Date.now(),
+        removed: false,
     };
 
     posts.unshift(post);
@@ -82,7 +89,8 @@ methods.set('/posts.edit', ({res, searchParams}) => {
         return;
     }
 
-    const postId = posts.find(i => i.id === +editId);
+    const filtred = filtredPost(posts);
+    const postId = filtred.find(i => i.id === +editId);
 
     if (postId === undefined) {
         sendResponse(res, {status: statusNotFaund, body: errorHtml});
@@ -99,7 +107,8 @@ methods.set('/posts.delete', ({res, searchParams}) => {
         return;
     }
 
-    const findId = +posts.findIndex(i => i.id === delId);
+    const filtred = filtredPost(posts);
+    const findId = filtred.find(i => i.id === delId);
     // const findId = posts.find(i => i.id === delId); Так не делайте!
 
     if (findId === undefined) {
@@ -109,7 +118,13 @@ methods.set('/posts.delete', ({res, searchParams}) => {
 
     sendJSON(res, findId);
     // posts.filter(i => i.id !== delId); Так не делайте!
-    posts.splice(findId, 1);
+    posts.map(i => {
+        if (i.id !== delId) {
+            return;
+        }
+
+        i.removed = true;
+    });
 });
 
 http.createServer((req, res) => {
