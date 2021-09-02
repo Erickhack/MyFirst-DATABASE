@@ -14,7 +14,7 @@ const errorHtml = `
 `;
 
 let nextId = 1;
-const posts = [];
+let posts = [];
 
 function sendResponse(res, {status = statusOk, headers = {}, body = null}) {
     Object.entries(headers).forEach(([kay, value]) => {
@@ -43,6 +43,7 @@ const methods = new Map();
 methods.set('/posts.get', ({res}) => {
     const filtred = filtredPost(posts);
     sendJSON(res, filtredPost(filtred));
+    console.table(posts);
 });
 methods.set('/posts.getById', ({res, searchParams}) => {
     const id = +searchParams.get('id');
@@ -100,32 +101,36 @@ methods.set('/posts.edit', ({res, searchParams}) => {
     postId.content = editContent;
     sendJSON(res, postId);
 });
-methods.set('/posts.delete', ({res, searchParams}) => {
-    const delId = +searchParams.get('id');
-    if (!searchParams.has('id') || isNaN(delId)) {
-        sendResponse(res, {status: statusBadReq, body: errorHtml});
-        return;
+
+methods.set('/posts.delete', function ({ res:response, searchParams }) {
+    const id = searchParams.get('id');
+  
+    if (isNaN(+id) || !searchParams.has('id') || (id !== null && !id.length)) {
+      sendResponse(response, { status: statusBadReq });
+      return;
     }
-
-    const filtred = filtredPost(posts);
-    const findId = filtred.find(i => i.id === delId);
-    // const findId = posts.find(i => i.id === delId); Так не делайте!
-
-    if (findId === undefined) {
-        sendResponse(res, {status: statusNotFaund, body: errorHtml});
-        return;
+  
+    const availablePosts = posts.filter((i) => !i.removed);
+    const post = availablePosts.filter((i) => i.id === +id)[0];
+  
+    if (post === undefined) {
+      sendResponse(response, { status: statusNotFaund });
+      return;
     }
-
-    sendJSON(res, findId);
-    // posts.filter(i => i.id !== delId); Так не делайте!
-    posts.map(i => {
-        if (i.id !== delId) {
-            return;
-        }
-
-        i.removed = true;
+  
+    posts = posts.map((i) => {
+      if (i.id !== +id) {
+        return i;
+      }
+  
+      i.removed = true;
+      return i;
     });
+
+    sendJSON(response, post);
+
 });
+    
 
 http.createServer((req, res) => {
     const {pathname, searchParams} = new URL(req.url, `http://${req.headers.host}`);
@@ -144,4 +149,5 @@ http.createServer((req, res) => {
     };
 
     method(params);
+    
 }).listen(port);
