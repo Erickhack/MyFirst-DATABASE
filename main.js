@@ -101,12 +101,11 @@ methods.set('/posts.edit', ({res, searchParams}) => {
     postId.content = editContent;
     sendJSON(res, postId);
 });
-
-methods.set('/posts.delete', function ({ res:response, searchParams }) {
+methods.set('/posts.delete', ({ res: response, searchParams }) => {
     const id = searchParams.get('id');
   
     if (isNaN(+id) || !searchParams.has('id') || (id !== null && !id.length)) {
-      sendResponse(response, { status: statusBadReq });
+      sendResponse(response, { status: statusBadReq, body: errorHtml });
       return;
     }
   
@@ -114,7 +113,7 @@ methods.set('/posts.delete', function ({ res:response, searchParams }) {
     const post = availablePosts.filter((i) => i.id === +id)[0];
   
     if (post === undefined) {
-      sendResponse(response, { status: statusNotFaund });
+      sendResponse(response, { status: statusNotFaund, body: errorHtml});
       return;
     }
   
@@ -130,7 +129,36 @@ methods.set('/posts.delete', function ({ res:response, searchParams }) {
     sendJSON(response, post);
 
 });
+methods.set('/posts.restore', ({res, searchParams}) => {
+    const resId = +searchParams.get('id');
+    const findPost = posts.find(i => i.id === resId);
     
+    if (!searchParams.has('id') || isNaN(resId)) {
+        sendResponse(res, {status: statusBadReq, body: errorHtml,});
+        return;
+    }
+    
+    if (findPost === undefined) {
+        sendResponse(res, {status: statusNotFaund, body: errorHtml});
+        return;
+    }
+
+    if (!findPost.removed) {
+        sendResponse(res, {status: statusBadReq, body: errorHtml,});
+        return;
+    }
+
+    posts = posts.map(i => {
+        if (i.id !== resId) {
+            return i;
+        }
+
+        i.removed = false;
+        return i;
+    });
+    console.table(posts);
+    sendJSON(res, findPost);
+});
 
 http.createServer((req, res) => {
     const {pathname, searchParams} = new URL(req.url, `http://${req.headers.host}`);
