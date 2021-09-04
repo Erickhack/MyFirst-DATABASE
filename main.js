@@ -154,7 +154,7 @@ methods.set('/posts.restore', ({res, searchParams}) => {
         }
 
         i.removed = false;
-        return i;
+        return i;   
     });
     console.table(posts);
     sendJSON(res, findPost);
