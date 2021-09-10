@@ -1,1 +1,1 @@
-DROP TABLE newposts;
+DROP TABLE posts;

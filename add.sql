@@ -1,1 +1,1 @@
-INSERT INTO posts(content) VALUES('Last Post!!!');
+INSERT INTO posts(content) VALUES('FUCK FFFF');
